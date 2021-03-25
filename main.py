@@ -138,5 +138,10 @@ class InsuranceReader(DatasetReader):
         data = [(el[0], len(el[1])) for el in zip(data, pos_responses_pool)]
         return data
 
-test = InsuranceReader()
-test.read(data_path='test')
+
+insurance_data_path = 'datasets/insuranceQA/V1/'
+
+insurace_reader_dict = InsuranceReader().read(data_path=insurance_data_path)
+# for x in range(0,1):
+# 	print(f'insurace_reader_dict["train"][{x}][0]: \t{insurace_reader_dict["train"][x][0]}')
+# 	print(f'insurace_reader_dict["train"][{x}][1]: \t{insurace_reader_dict["train"][x][1]}')
