@@ -132,7 +132,7 @@ class QAModel():
         # compute the loss
         loss = merge(
             [good_similarity, bad_similarity],
-            mode=lambda x: K.relu(margin - x[0] + x[1]),
+            mode=lambda x: K.relu(x[1] - x[0] + margin),                      # normalize the known "good" answer similarity with a similarity from a known "bad" answer similarity with a minimum margin (typically 0.05)
             output_shape=lambda x: x[0]
         )
 
