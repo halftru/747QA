@@ -1,6 +1,6 @@
 from keras import backend as K
 from keras.layers import Embedding
-from keras.layers import LSTM, Input, merge, Lambda, concatenate
+from keras.layers import LSTM, Input, merge, Lambda, concatenate, Dot
 from keras.layers.wrappers import Bidirectional
 from keras.layers.convolutional import Convolution1D
 from keras.models import Model
@@ -135,19 +135,13 @@ class QAModel():
         answer_pool = maxpool(answer_cnn)
 
         # get similarity similarity score
-        similarity = self.get_cosine_similarity()
-        merged_model = merge([question_pool, answer_pool],mode=similarity, output_shape=lambda _: (None, 1))
+        merged_model = Dot(axes=1, normalize=True)([question_pool, answer_pool])
         lstm_convolution_model = Model(inputs=[question, answer], outputs=merged_model, name='lstm_convolution_model')
         good_similarity = lstm_convolution_model([question, answer_good])
         bad_similarity = lstm_convolution_model([question, answer_bad])
 
         # compute the loss
-        loss = merge(
-            [good_similarity, bad_similarity],
-            mode=lambda x: K.relu(x[1] - x[0] + margin),                      # normalize the known "good" answer similarity with a similarity from a known "bad" answer similarity with a minimum margin (typically 0.05)
-            output_shape=lambda x: x[0]
-        )
-
+        loss = Lambda(lambda x: K.relu(x[1] - x[0] + margin))([good_similarity, bad_similarity])
         # return the training and prediction model
         prediction_model = Model(inputs=[question, answer_good], outputs=good_similarity, name='prediction_model')
         prediction_model.compile(loss=lambda y_true, y_pred: y_pred, optimizer="rmsprop")
