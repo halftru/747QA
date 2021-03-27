@@ -141,6 +141,7 @@ class QAModel():
         bad_similarity = lstm_convolution_model([question, answer_bad])
 
         # compute the loss
+        #TODO test to make sure the cosine similarity is being computed correctly
         loss = Lambda(lambda x: K.relu(x[1] - x[0] + margin))([good_similarity, bad_similarity])
         # return the training and prediction model
         prediction_model = Model(inputs=[question, answer_good], outputs=good_similarity, name='prediction_model')
