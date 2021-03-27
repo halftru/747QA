@@ -1,6 +1,6 @@
 from keras import backend as K
 from keras.layers import Embedding
-from keras.layers import LSTM, Input, merge, Lambda
+from keras.layers import LSTM, Input, merge, Lambda, concatenate
 from keras.layers.wrappers import Bidirectional
 from keras.layers.convolutional import Convolution1D
 from keras.models import Model
@@ -106,13 +106,34 @@ class QAModel():
         b_rnn = LSTM(hidden_dim, return_sequences=True)
         qf_rnn = f_rnn(question_embedding)
         qb_rnn = b_rnn(question_embedding)
-        question_pool = merge([qf_rnn, qb_rnn], mode='concat', concat_axis=-1)
+        question_pool = concatenate([qf_rnn, qb_rnn],  axis=-1)
+        # question_pool = merge([qf_rnn, qb_rnn], mode='concat', concat_axis=-1)
         af_rnn = f_rnn(answer_embedding)
         ab_rnn = b_rnn(answer_embedding)
-        answer_pool = merge([af_rnn, ab_rnn], mode='concat', concat_axis=-1)
+        answer_pool = concatenate([af_rnn, ab_rnn], axis=-1)
+        # answer_pool = merge([af_rnn, ab_rnn], mode='concat', concat_axis=-1)
 
         # pass the embedding from bi-lstm through cnn
         cnns = [Convolution1D(filter_length=filter_length,nb_filter=500,activation='tanh',border_mode='same') for filter_length in [1, 2, 3, 5]]
+        #
+        # self.convolution_layers = [Convolution1D(filters=self.num_filters,
+        #                                          kernel_size=ngram_size,
+        #                                          activation=self.conv_layer_activation,
+        #                                          kernel_regularizer=self.regularizer(),
+        #                                          bias_regularizer=self.regularizer())
+        #                            for ngram_size in self.ngram_filter_sizes]
+        #
+        # filter_sizes = [1,2,3,5]
+        # for sz in filter_sizes:
+        #     conv = Convolution1D(filters=filter_length,
+        #                          kernel_size=sz,
+        #                          # padding="valid",
+        #                          activation='tanh',
+        #                          strides=1,
+        #                          kernel_initializer=init)(z)
+        #     conv = GlobalMaxPooling1D()(conv)
+        #     conv_blocks.append(conv)
+
         question_cnn = merge([cnn(question_pool) for cnn in cnns], mode='concat')
         answer_cnn = merge([cnn(answer_pool) for cnn in cnns], mode='concat')
 
