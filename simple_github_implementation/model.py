@@ -4,6 +4,7 @@ from keras.layers import LSTM, Input, merge, Lambda, concatenate
 from keras.layers.wrappers import Bidirectional
 from keras.layers.convolutional import Convolution1D
 from keras.models import Model
+# from keras.layers.convolutional import Convolution1D(nb_filter, filter_length, init='glorot_uniform', activation=None, weights=None, border_mode='valid', subsample_length=1, W_regularizer=None, b_regularizer=None, activity_regularizer=None, W_constraint=None, b_constraint=None, bias=True, input_dim=None, input_length=None)
 import numpy as np
 
 class QAModel():
@@ -114,28 +115,18 @@ class QAModel():
         # answer_pool = merge([af_rnn, ab_rnn], mode='concat', concat_axis=-1)
 
         # pass the embedding from bi-lstm through cnn
-        cnns = [Convolution1D(filter_length=filter_length,nb_filter=500,activation='tanh',border_mode='same') for filter_length in [1, 2, 3, 5]]
-        #
-        # self.convolution_layers = [Convolution1D(filters=self.num_filters,
-        #                                          kernel_size=ngram_size,
-        #                                          activation=self.conv_layer_activation,
-        #                                          kernel_regularizer=self.regularizer(),
-        #                                          bias_regularizer=self.regularizer())
-        #                            for ngram_size in self.ngram_filter_sizes]
-        #
-        # filter_sizes = [1,2,3,5]
-        # for sz in filter_sizes:
-        #     conv = Convolution1D(filters=filter_length,
-        #                          kernel_size=sz,
-        #                          # padding="valid",
-        #                          activation='tanh',
-        #                          strides=1,
-        #                          kernel_initializer=init)(z)
-        #     conv = GlobalMaxPooling1D()(conv)
-        #     conv_blocks.append(conv)
 
-        question_cnn = merge([cnn(question_pool) for cnn in cnns], mode='concat')
-        answer_cnn = merge([cnn(answer_pool) for cnn in cnns], mode='concat')
+        # cnns = [Convolution1D(filter_length=filter_length,nb_filter=500,activation='tanh',border_mode='same') for filter_length in [1, 2, 3, 5]]
+        # transformed the Object invocation to newer version of keras
+        # nb_filter is filters
+        # filer_length is kernal_size
+        # border_mode is padding
+        filter_sizes = [1, 2, 3, 5]
+        cnns = [Convolution1D(filters=500, kernel_size=ngram_size, activation='tanh', padding= 'same')
+                                   for ngram_size in filter_sizes]
+
+        question_cnn = concatenate([cnn(question_pool) for cnn in cnns])
+        answer_cnn = concatenate([cnn(answer_pool) for cnn in cnns])
 
         # apply max pooling
         maxpool = Lambda(lambda x: K.max(x, axis=1, keepdims=False), output_shape=lambda x: (x[0], x[2]))
