@@ -8,6 +8,7 @@ import pickle
 import random
 from scipy.stats import rankdata
 import tensorflow as tf
+from keras.callbacks import EarlyStopping, ModelCheckpoint
 
 # let my gpu have memory
 physical_devices = tf.config.list_physical_devices('GPU')
@@ -23,16 +24,18 @@ def main(mode='test'):
     embedding_file = "./data/word2vec_100_dim.embeddings"
     qa_model = QAModel()
     train_model, predict_model = qa_model.get_lstm_cnn_model(embedding_file, len(vocabulary))
-    epo = 50
+    epo = 100
     if mode == 'train':
         # load training data
         qa_data = QAData()
         questions, good_answers, bad_answers = qa_data.get_training_data()
 
+        callbacks = [EarlyStopping(monitor='val_loss', patience=100),
+                     ModelCheckpoint(filepath='best_model.h5', monitor='val_loss', save_best_only=True)]
         # train the model
         Y = np.zeros(shape=(questions.shape[0],))
-        train_model.fit([questions, good_answers, bad_answers], Y, epochs=epo, batch_size=64, validation_split=0.1,
-                        verbose=1)
+        train_model.fit([questions, good_answers, bad_answers], Y, epochs=epo, batch_size=20, validation_split=0.1,
+                        verbose=1, callbacks=callbacks)
 
         # save the trained model
         # train_model.save_weights('model/train_weights_epoch_' + str(epo) + '.h5', overwrite=True)

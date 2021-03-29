@@ -4,13 +4,14 @@ from keras.layers import LSTM, Input, merge, Lambda, concatenate, Dot
 from keras.layers.convolutional import Convolution1D
 from keras.models import Model
 import numpy as np
+from keras.layers.wrappers import Bidirectional
 
 
 class QAModel:
     @staticmethod
     def get_lstm_cnn_model(embedding_file, vocab_size):
-        margin = 0.05
-        hidden_dim = 128
+        margin = 0.2
+        hidden_dim = 141
         enc_timesteps = 200
         dec_timesteps = 200
         weights = np.load(embedding_file)
@@ -36,7 +37,7 @@ class QAModel:
         ab_rnn = b_rnn(answer_embedding)
         answer_pool = concatenate([af_rnn, ab_rnn], axis=-1)
 
-        filter_sizes = [3, 5, 7]
+        filter_sizes = [2, 2]
         cnns = [Convolution1D(filters=500, kernel_size=ngram_size, activation='tanh', padding='same')
                                    for ngram_size in filter_sizes]
 
@@ -60,8 +61,8 @@ class QAModel:
 
         # return the training and prediction model
         prediction_model = Model(inputs=[question, answer_good], outputs=good_similarity, name='prediction_model')
-        prediction_model.compile(loss=lambda y_true, y_pred: y_pred, optimizer="rmsprop")
+        prediction_model.compile(loss=lambda y_true, y_pred: y_pred, optimizer="SGD")
         training_model = Model(inputs=[question, answer_good, answer_bad], outputs=loss, name='training_model')
-        training_model.compile(loss=lambda y_true, y_pred: y_pred, optimizer="rmsprop")
+        training_model.compile(loss=lambda y_true, y_pred: y_pred, optimizer="SGD")
 
         return training_model, prediction_model
