@@ -41,8 +41,8 @@ class QAData():
 
     def __init__(self):
         self.vocabulary = Vocabulary("./data/vocab_all.txt")
-        self.dec_timesteps=150
-        self.enc_timesteps=150
+        self.dec_timesteps=200
+        self.enc_timesteps=200
         self.answers = pickle.load(open("./data/answers.pkl",'rb'))
         self.training_set = pickle.load(open("./data/train.pkl",'rb'))
 
