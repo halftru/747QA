@@ -1,3 +1,5 @@
 *venv/
 settings.json
 __pycache__/
+*.h5
+*.png

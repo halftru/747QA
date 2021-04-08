@@ -85,10 +85,10 @@ class QAModel():
             prediction_model: model used to predict the similarity
         """
 
-        margin = 0.05
-        hidden_dim = 200
-        enc_timesteps = 150
-        dec_timesteps = 150
+        margin = 0.2        # 0.05 originally
+        hidden_dim = 141    # 128 originally
+        enc_timesteps = 200
+        dec_timesteps = 200
         weights = np.load(embedding_file)
 
         # initialize the question and answer shapes and datatype
@@ -121,8 +121,8 @@ class QAModel():
         # nb_filter is filters
         # filer_length is kernal_size
         # border_mode is padding
-        filter_sizes = [1, 2, 3, 5]
-        cnns = [Convolution1D(filters=500, kernel_size=ngram_size, activation='tanh', padding= 'same')
+        filter_sizes = [1, 2, 3, 5]     # [1, 2, 3, 5] originally
+        cnns = [Convolution1D(filters=250, kernel_size=ngram_size, activation='tanh', padding= 'same')
                                    for ngram_size in filter_sizes]
 
         question_cnn = concatenate([cnn(question_pool) for cnn in cnns])
@@ -142,11 +142,13 @@ class QAModel():
 
         # compute the loss
         #TODO test to make sure the cosine similarity is being computed correctly
-        loss = Lambda(lambda x: K.relu(x[1] - x[0] + margin))([good_similarity, bad_similarity])
+        loss = Lambda(lambda x: K.relu(x[1] - x[0] + margin))([good_similarity, bad_similarity])    # L = max{0, M − cosine(q, a+) + cosine(q, a−)} (7)
         # return the training and prediction model
         prediction_model = Model(inputs=[question, answer_good], outputs=good_similarity, name='prediction_model')
-        prediction_model.compile(loss=lambda y_true, y_pred: y_pred, optimizer="rmsprop")
+        prediction_model.compile(loss=lambda y_true, y_pred: y_pred, optimizer="sgd")
+        # prediction_model.compile(loss=lambda y_true, y_pred: y_pred, optimizer="rmsprop")
         training_model = Model(inputs=[question, answer_good, answer_bad], outputs=loss, name='training_model')
-        training_model.compile(loss=lambda y_true, y_pred: y_pred, optimizer="rmsprop")
+        training_model.compile(loss=lambda y_true, y_pred: y_pred, optimizer="sgd")
+        # training_model.compile(loss=lambda y_true, y_pred: y_pred, optimizer="rmsprop")
 
         return training_model, prediction_model
