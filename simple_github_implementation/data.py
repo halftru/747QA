@@ -74,7 +74,7 @@ class QAData():
         good_answers = self.pad(good_answers, self.dec_timesteps)
         bad_answers = self.pad(random.sample(list(self.answers.values()), len(good_answers)), self.dec_timesteps)
 
-        return questions,good_answers,bad_answers
+        return questions, good_answers, bad_answers
 
     def process_data(self, d):
         """

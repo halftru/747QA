@@ -22,9 +22,13 @@ class QAModel:
         answer_good = Input(shape=(dec_timesteps,), dtype='int32', name='answer_good_base')
         answer_bad = Input(shape=(dec_timesteps,), dtype='int32', name='answer_bad_base')
 
+
+
         # embed the question and answers
         qa_embedding = Embedding(input_dim=vocab_size, output_dim=weights.shape[1], weights=[weights])
         question_embedding = qa_embedding(question)
+        print(question_embedding)
+        exit()
         answer_embedding = qa_embedding(answer)
 
         # pass the question embedding through bi-lstm
@@ -61,8 +65,8 @@ class QAModel:
 
         # return the training and prediction model
         prediction_model = Model(inputs=[question, answer_good], outputs=good_similarity, name='prediction_model')
-        prediction_model.compile(loss=lambda y_true, y_pred: y_pred, optimizer="SGD")
+        prediction_model.compile(loss=lambda y_true, y_pred: y_pred, optimizer="rmsprop")
         training_model = Model(inputs=[question, answer_good, answer_bad], outputs=loss, name='training_model')
-        training_model.compile(loss=lambda y_true, y_pred: y_pred, optimizer="SGD")
+        training_model.compile(loss=lambda y_true, y_pred: y_pred, optimizer="rmsprop")
 
         return training_model, prediction_model
