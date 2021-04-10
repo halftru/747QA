@@ -22,7 +22,7 @@ answers = None
 def main(mode='test'):
     # get the train and predict model model
     vocabulary = Vocabulary("./data/vocab_all.txt")
-    embedding_file = "glove_300_dim.embeddings.npy"
+    embedding_file = "data/pretrained_word2vec_100_dim.embeddings"
     qa_model = QAModel()
     print(len(vocabulary))
     train_model, predict_model = qa_model.get_lstm_cnn_model(embedding_file, len(vocabulary))

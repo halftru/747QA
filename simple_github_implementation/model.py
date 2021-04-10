@@ -15,8 +15,8 @@ class QAModel:
         hidden_dim = 141
         sentence_length = 200
         weights = np.load(embedding_file)
-        weight = np.load('glove_100dim.embeddings.npy')
-        weight2 = np.load('word2vec_100_dim.embeddings')
+        weight = np.load('data/pretrained_glove_100_dim.embeddings.npy')
+        weight2 = np.load('data/pretrained_word2vec_100_dim.embeddings')
 
         # initialize the question and answer shapes and datatype
         question = Input(shape=(sentence_length,), dtype='int32', name='question_base')

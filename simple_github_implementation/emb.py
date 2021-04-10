@@ -29,7 +29,7 @@ def glove():
             embedding_matrix_1[i] = embedding_vector
     print("done with glove")
     print(embedding_matrix_1.shape)
-    np.save("glove_300_dim.embeddings", embedding_matrix_1)
+    np.save("data/pretrained_glove_300_dim.embeddings", embedding_matrix_1)
 
 
 def word2():
@@ -41,7 +41,7 @@ def word2():
             embedding_matrix_2[i] = embedding_vector
     print("done with word2vec")
     print(embedding_matrix_2.shape)
-    np.save("word2_300_dim.embeddings", embedding_matrix_2)
+    np.save("data/pretrained_word2_300_dim.embeddings", embedding_matrix_2)
 
 
 def word():
@@ -54,7 +54,7 @@ def word():
         if w not in d: continue
         emb[i, :] = weights[d[w], :]
 
-    np.save(open('word2vec_100_dim.embeddings', 'wb'), emb)
+    np.save(open('data/pretrained_word2vec_100_dim.embeddings', 'wb'), emb)
 
 
 def fast():
@@ -67,7 +67,7 @@ def fast():
         if w not in d: continue
         emb[i, :] = weights[d[w], :]
 
-    np.save(open('fast_100_dim.embeddings', 'wb'), emb)
+    np.save(open('data/pretrained_fast_100_dim.embeddings', 'wb'), emb)
 
 
 vocab = pickle.load(open("./data/vocabulary.pkl", 'rb'))
