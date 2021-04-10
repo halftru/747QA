@@ -1,6 +1,7 @@
 from keras import backend as K
 from keras.layers import Embedding
 from keras.layers import LSTM, Input, merge, Lambda, concatenate, Dot
+from keras.layers.convolutional import Convolution2D
 from keras.layers.convolutional import Convolution1D
 from keras.models import Model
 import numpy as np
@@ -12,25 +13,21 @@ class QAModel:
     def get_lstm_cnn_model(embedding_file, vocab_size):
         margin = 0.2
         hidden_dim = 141
-        enc_timesteps = 200
-        dec_timesteps = 200
+        sentence_length = 200
         weights = np.load(embedding_file)
+        weight = np.load('glove_100dim.embeddings.npy')
+        weight2 = np.load('word2vec_100_dim.embeddings')
 
         # initialize the question and answer shapes and datatype
-        question = Input(shape=(enc_timesteps,), dtype='int32', name='question_base')
-        answer = Input(shape=(dec_timesteps,), dtype='int32', name='answer_good_base')
-        answer_good = Input(shape=(dec_timesteps,), dtype='int32', name='answer_good_base')
-        answer_bad = Input(shape=(dec_timesteps,), dtype='int32', name='answer_bad_base')
-
-
+        question = Input(shape=(sentence_length,), dtype='int32', name='question_base')
+        answer = Input(shape=(sentence_length,), dtype='int32', name='answer_good_base')
+        answer_good = Input(shape=(sentence_length,), dtype='int32', name='answer_good_base')
+        answer_bad = Input(shape=(sentence_length,), dtype='int32', name='answer_bad_base')
 
         # embed the question and answers
         qa_embedding = Embedding(input_dim=vocab_size, output_dim=weights.shape[1], weights=[weights])
         question_embedding = qa_embedding(question)
-        print(question_embedding)
-        exit()
         answer_embedding = qa_embedding(answer)
-
         # pass the question embedding through bi-lstm
         f_rnn = LSTM(hidden_dim, return_sequences=True)
         b_rnn = LSTM(hidden_dim, return_sequences=True)
@@ -41,7 +38,7 @@ class QAModel:
         ab_rnn = b_rnn(answer_embedding)
         answer_pool = concatenate([af_rnn, ab_rnn], axis=-1)
 
-        filter_sizes = [2, 2]
+        filter_sizes = [1, 2, 3, 5]
         cnns = [Convolution1D(filters=500, kernel_size=ngram_size, activation='tanh', padding='same')
                                    for ngram_size in filter_sizes]
 

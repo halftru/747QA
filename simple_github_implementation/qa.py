@@ -22,10 +22,11 @@ answers = None
 def main(mode='test'):
     # get the train and predict model model
     vocabulary = Vocabulary("./data/vocab_all.txt")
-    embedding_file = "./data/word2vec_100_dim.embeddings"
+    embedding_file = "glove_300_dim.embeddings.npy"
     qa_model = QAModel()
+    print(len(vocabulary))
     train_model, predict_model = qa_model.get_lstm_cnn_model(embedding_file, len(vocabulary))
-    epo = 100
+    epo = 1
     if mode == 'train':
         # load training data
         qa_data = QAData()
@@ -40,8 +41,6 @@ def main(mode='test'):
 
         # save the trained model
         # train_model.save_weights('model/train_weights_epoch_' + str(epo) + '.h5', overwrite=True)
-        model = keras.models.load_model('best_model.h5')
-        model.save_weights('model/best_weights_epoch_' + str(epo) + '.h5', overwrite=True)
         predict_model.save_weights('model/predict_weights_epoch_' + str(epo) + '.h5', overwrite=True)
 
     elif mode == 'predict':
@@ -51,7 +50,7 @@ def main(mode='test'):
 
         # load weights from trained model
         qa_data = QAData()
-        model_filenames = ['model/best_model.h5', 'model/predict_weights_epoch_' + str(epo) + '.h5']
+        model_filenames = ['model/predict_weights_epoch_' + str(epo) + '.h5']
 
         for model_name in model_filenames:
             predict_model.load_weights(model_name)

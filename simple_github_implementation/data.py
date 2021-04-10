@@ -1,17 +1,11 @@
 import random
-from collections import namedtuple
 import pickle
+from keras.preprocessing.sequence import pad_sequences
 
 
 class Vocabulary(dict):
-    """
-    Bi-directional look up dictionary for the vocabulary
-
-    Args:
-        (dict): the default python dict class is extended
-    """
-
     def __init__(self, vocabulary_file_name):
+        super().__init__()
         with open(vocabulary_file_name) as vocabulary_file:
             for line in vocabulary_file:
                 key, value = line.split()
@@ -34,35 +28,18 @@ class Vocabulary(dict):
         return dict.__len__(self) // 2
 
 
-class QAData():
-    """
-    Load the train/predecit/test data
-    """
+def pad(data, length):
+    return pad_sequences(data, maxlen=length, padding='post', truncating='post', value=0)
 
+
+class QAData:
     def __init__(self):
         self.vocabulary = Vocabulary("./data/vocab_all.txt")
-        self.dec_timesteps=200
-        self.enc_timesteps=200
-        self.answers = pickle.load(open("./data/answers.pkl",'rb'))
-        self.training_set = pickle.load(open("./data/train.pkl",'rb'))
-
-    def pad(self, data, length):
-        """
-        pad the data to meet given length requirement
-
-        Args:
-            data (vector): vector of question or answer
-            length(integer): length of desired vector
-        """
-
-        from keras.preprocessing.sequence import pad_sequences
-        return pad_sequences(data, maxlen=length, padding='post', truncating='post', value=0)
+        self.sentence_length = 200
+        self.answers = pickle.load(open("./data/answers.pkl", 'rb'))
+        self.training_set = pickle.load(open("./data/train.pkl", 'rb'))
 
     def get_training_data(self):
-        """
-        Return training question and answers
-        """
-
         questions = []
         good_answers = []
         for j, qa in enumerate(self.training_set):
@@ -70,31 +47,23 @@ class QAData():
             good_answers.extend([self.answers[i] for i in qa['answers']])
 
         # pad the question and answers
-        questions = self.pad(questions, self.enc_timesteps)
-        good_answers = self.pad(good_answers, self.dec_timesteps)
-        bad_answers = self.pad(random.sample(list(self.answers.values()), len(good_answers)), self.dec_timesteps)
+        questions = pad(questions, self.sentence_length)
+        good_answers = pad(good_answers, self.sentence_length)
+        bad_answers = pad(random.sample(list(self.answers.values()), len(good_answers)), self.sentence_length)
 
         return questions, good_answers, bad_answers
 
     def process_data(self, d):
-        """
-        Process the predection data
-        """
-
         indices = d['good'] + d['bad']
-        answers = self.pad([self.answers[i] for i in indices], self.dec_timesteps)
-        question = self.pad([d['question']] * len(indices), self.enc_timesteps)
-        return indices,answers,question
+        answers = pad([self.answers[i] for i in indices], self.sentence_length)
+        question = pad([d['question']] * len(indices), self.sentence_length)
+        return indices, answers, question
 
     def process_test_data(self, question, answers):
-        """
-        Process the test data
-        """
-
         answer_unpadded = []
         for answer in answers:
-            print (answer.split(' '))
+            print(answer.split(' '))
             answer_unpadded.append([self.vocabulary[word] for word in answer.split(' ')])
-        answers = self.pad(answer_unpadded, self.dec_timesteps)
-        question = self.pad([[self.vocabulary[word] for word in question.split(' ')]] * len(answers), self.enc_timesteps)
+        answers = pad(answer_unpadded, self.sentence_length)
+        question = pad([[self.vocabulary[word] for word in question.split(' ')]] * len(answers), self.sentence_length)
         return answers, question
