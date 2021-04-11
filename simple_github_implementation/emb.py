@@ -5,6 +5,10 @@ from gensim.models import Word2Vec, KeyedVectors, FastText
 from keras_preprocessing.sequence import pad_sequences
 from keras_preprocessing.text import Tokenizer
 import numpy as np
+import torch
+from transformers import BertTokenizer, BertModel
+
+tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 
 
 def rebuild(vocab, indices):

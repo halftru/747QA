@@ -25,7 +25,7 @@ def main(mode='test'):
     embedding_file = "glove_300_dim.embeddings.npy"
     qa_model = QAModel()
     print(len(vocabulary))
-    train_model, predict_model = qa_model.get_lstm_cnn_model(embedding_file, len(vocabulary))
+    train_model, predict_model = qa_model.get_lstm_cnn_model(embedding_file)
     epo = 1
     if mode == 'train':
         # load training data
@@ -79,6 +79,7 @@ def main(mode='test'):
             print(f'Results for: model: {model_name}')
             print("Precision", precision)
             print("MRR", mrr)
+
 
 if __name__ == "__main__":
     main(mode='train')
