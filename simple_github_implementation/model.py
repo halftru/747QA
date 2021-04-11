@@ -17,7 +17,7 @@ class QAModel:
         sentence_length = 200
         weights = np.load(embedding_file)
         weights = pd.DataFrame(weights)
-        weights = weights.loc[(weights!=0).any(axis=1)]
+        weights = weights.loc[(weights != 0).any(axis=1)]
         weights = weights.to_numpy()
         # initialize the question and answer shapes and datatype
         question = Input(shape=(sentence_length,), dtype='int32', name='question_base')
@@ -34,14 +34,14 @@ class QAModel:
         b_rnn = LSTM(hidden_dim, return_sequences=True)
         qf_rnn = f_rnn(question_embedding)
         qb_rnn = b_rnn(question_embedding)
-        question_pool = concatenate([qf_rnn, qb_rnn],  axis=-1)
+        question_pool = concatenate([qf_rnn, qb_rnn], axis=-1)
         af_rnn = f_rnn(answer_embedding)
         ab_rnn = b_rnn(answer_embedding)
         answer_pool = concatenate([af_rnn, ab_rnn], axis=-1)
 
         filter_sizes = [1, 2, 3, 5]
         cnns = [Convolution1D(filters=500, kernel_size=ngram_size, activation='tanh', padding='same')
-                                   for ngram_size in filter_sizes]
+                for ngram_size in filter_sizes]
 
         question_cnn = concatenate([cnn(question_pool) for cnn in cnns])
         answer_cnn = concatenate([cnn(answer_pool) for cnn in cnns])
