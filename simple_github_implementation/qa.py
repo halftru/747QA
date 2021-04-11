@@ -25,7 +25,7 @@ def main(mode='test'):
     embedding_file = "data/pretrained_word2vec_100_dim.embeddings"
     qa_model = QAModel()
     print(len(vocabulary))
-    train_model, predict_model = qa_model.get_lstm_cnn_model(embedding_file, len(vocabulary))
+    train_model, predict_model = qa_model.get_lstm_cnn_model(embedding_file)
     epo = 1
     if mode == 'train':
         # load training data

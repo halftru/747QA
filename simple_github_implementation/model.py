@@ -11,7 +11,7 @@ import pandas as pd
 
 class QAModel:
     @staticmethod
-    def get_lstm_cnn_model(embedding_file, vocab_size):
+    def get_lstm_cnn_model(embedding_file):
         margin = 0.2
         hidden_dim = 141
         sentence_length = 200
@@ -25,7 +25,7 @@ class QAModel:
         answer_bad = Input(shape=(sentence_length,), dtype='int32', name='answer_bad_base')
 
         # embed the question and answers
-        qa_embedding = Embedding(input_dim=vocab_size, output_dim=weights.shape[1], weights=[weights])
+        qa_embedding = Embedding(input_dim=weights[0], output_dim=weights.shape[1], weights=[weights])
         question_embedding = qa_embedding(question)
         answer_embedding = qa_embedding(answer)
         # pass the question embedding through bi-lstm
