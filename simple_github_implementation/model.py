@@ -18,6 +18,7 @@ class QAModel:
         weights = np.load(embedding_file)
         weights = pd.DataFrame(weights)
         weights = weights.loc[(weights!=0).any(axis=1)]
+        weights = weights.values
         # initialize the question and answer shapes and datatype
         question = Input(shape=(sentence_length,), dtype='int32', name='question_base')
         answer = Input(shape=(sentence_length,), dtype='int32', name='answer_good_base')
