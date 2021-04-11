@@ -6,6 +6,7 @@ from keras.layers.convolutional import Convolution1D
 from keras.models import Model
 import numpy as np
 from keras.layers.wrappers import Bidirectional
+import pandas as pd
 
 
 class QAModel:
@@ -15,9 +16,8 @@ class QAModel:
         hidden_dim = 141
         sentence_length = 200
         weights = np.load(embedding_file)
-        weight = np.load('data/pretrained_glove_100_dim.embeddings.npy')
-        weight2 = np.load('data/pretrained_word2vec_100_dim.embeddings')
-
+        weights = pd.DataFrame(weights)
+        weights = weights.loc[(weights!=0).any(axis=1)]
         # initialize the question and answer shapes and datatype
         question = Input(shape=(sentence_length,), dtype='int32', name='question_base')
         answer = Input(shape=(sentence_length,), dtype='int32', name='answer_good_base')
