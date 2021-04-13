@@ -37,7 +37,7 @@ from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
                               TensorDataset)
 from torch.utils.data.distributed import DistributedSampler
 from tqdm.auto import tqdm
-from utils_dataset import acc_and_f1, convert_examples_to_features, output_modes, processors
+from utils_dataset import acc_and_f1, convert_examples_to_features, processors
 
 logger = logging.getLogger(__name__)
 
@@ -229,10 +229,7 @@ def evaluate(args, model, tokenizer, prefix=""):
                 preds = np.append(preds, logits.detach().cpu().numpy(), axis=0)
                 out_label_ids = np.append(out_label_ids, inputs['labels'].detach().cpu().numpy(), axis=0)
 
-        if args.output_mode == "classification":
-            preds = np.argmax(preds, axis=1)
-        else:
-            raise KeyError(args.output_mode)
+        preds = np.argmax(preds, axis=1)
         result = acc_and_f1(preds, out_label_ids)
         results.update(result)
 
@@ -248,7 +245,6 @@ def evaluate(args, model, tokenizer, prefix=""):
 
 def load_and_cache_examples(args, task, tokenizer, evaluate=False):
     processor = processors[task]()
-    output_mode = output_modes[task]
     # Load data features from cache or dataset file
     data_dir = os.path.dirname(args.train_tsv)
     cached_features_file = os.path.join(data_dir, 'cached_{}_{}_{}_{}'.format(
@@ -272,7 +268,7 @@ def load_and_cache_examples(args, task, tokenizer, evaluate=False):
             negative_examples.append(negative)
 
         def _get_features(examples):
-            return convert_examples_to_features(examples, label_list, args.max_seq_length, tokenizer, output_mode,
+            return convert_examples_to_features(examples, label_list, args.max_seq_length, tokenizer,
                                                 cls_token_at_end=bool(args.model_type in ['xlnet']),
                                                 # xlnet has a cls token at the end
                                                 cls_token=tokenizer.cls_token,
@@ -426,7 +422,6 @@ def main():
     if args.task_name not in processors:
         raise ValueError("Task not found: %s" % args.task_name)
     processor = processors[args.task_name]()
-    args.output_mode = output_modes[args.task_name]
     label_list = processor.get_labels()
     num_labels = len(label_list)
 

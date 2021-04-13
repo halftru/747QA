@@ -81,7 +81,7 @@ class BERTSelProcessor:
 
 
 def convert_examples_to_features(examples, label_list, max_seq_length,
-                                 tokenizer, output_mode,
+                                 tokenizer,
                                  cls_token_at_end=False, pad_on_left=False,
                                  cls_token='[CLS]', sep_token='[SEP]', pad_token=0,
                                  sequence_a_segment_id=0, sequence_b_segment_id=1,
@@ -165,10 +165,7 @@ def convert_examples_to_features(examples, label_list, max_seq_length,
         assert len(input_mask) == max_seq_length
         assert len(segment_ids) == max_seq_length
 
-        if output_mode == "classification":
-            label_id = label_map[example.label]
-        else:
-            raise KeyError(output_mode)
+        label_id = label_map[example.label]
 
         features.append(
             InputFeatures(input_ids=input_ids, input_mask=input_mask, segment_ids=segment_ids, label_id=label_id))
@@ -248,6 +245,3 @@ processors = {
     "BERTSel": BERTSelProcessor,
 }
 
-output_modes = {
-    "BERTSel": "classification"
-}

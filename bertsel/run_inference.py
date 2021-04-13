@@ -28,7 +28,7 @@ from pytorch_transformers import (BertConfig,
 from scipy.special import softmax
 from torch.utils.data import (DataLoader, SequentialSampler, TensorDataset)
 from tqdm import tqdm
-from utils_dataset import convert_examples_to_features, output_modes, processors, InputExample, \
+from utils_dataset import convert_examples_to_features, processors, InputExample, \
     top_one_accuracy, mean_reciprocal_rank, mean_average_precision
 
 logger = logging.getLogger(__name__)
@@ -92,7 +92,6 @@ def inference(args, model, tokenizer, prefix=""):
 
 def load_example(args, text, task, tokenizer):
     processor = processors[task]()
-    output_mode = output_modes[task]
 
     logger.info("Creating features from input")
     label_list = processor.get_labels()
@@ -101,7 +100,7 @@ def load_example(args, text, task, tokenizer):
         for i, line in enumerate(f):
             examples.append(InputExample(guid=i, text_a=text, text_b=line, label="1"))
 
-    features = convert_examples_to_features(examples, label_list, args.max_seq_length, tokenizer, output_mode,
+    features = convert_examples_to_features(examples, label_list, args.max_seq_length, tokenizer,
                                             cls_token_at_end=bool(args.model_type in ['xlnet']),
                                             # xlnet has a cls token at the end
                                             cls_token=tokenizer.cls_token,
@@ -114,8 +113,7 @@ def load_example(args, text, task, tokenizer):
     all_input_ids = torch.tensor([f.input_ids for f in features], dtype=torch.long)
     all_input_mask = torch.tensor([f.input_mask for f in features], dtype=torch.long)
     all_segment_ids = torch.tensor([f.segment_ids for f in features], dtype=torch.long)
-    if output_mode == "classification":
-        all_label_ids = torch.tensor([f.label_id for f in features], dtype=torch.long)
+    all_label_ids = torch.tensor([f.label_id for f in features], dtype=torch.long)
 
     dataset = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids)
     return dataset
@@ -171,7 +169,6 @@ def main():
     if args.task_name not in processors:
         raise ValueError("Task not found: %s" % args.task_name)
     processor = processors[args.task_name]()
-    args.output_mode = output_modes[args.task_name]
     label_list = processor.get_labels()
     num_labels = len(label_list)
 
