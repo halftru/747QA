@@ -31,8 +31,8 @@ import transformers
 ## Configuration
 """
 
-max_length = 128  # Maximum length of input sentence to the model.
-batch_size = 32
+max_length = 200  # Maximum length of input sentence to the model.
+batch_size = 32	# 256 for Insurance QA
 epochs = 2
 
 # Labels in our dataset.
