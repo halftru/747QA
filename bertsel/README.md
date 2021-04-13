@@ -19,13 +19,13 @@ cd BERTSel
 python3 -m virtualenv env
 source env/bin/activate
 
-pip install -r script/requirements.txt
+pip install -r bertsel/requirements.txt
 ```
 
 ## Basic Usage
 ### Train
 ```
-python script/run_dataset.py --task_name BERTSel --do_train --do_lower_case \
+python bertsel/run_dataset.py --task_name BERTSel --do_train --do_lower_case \
  --model_type bert --model_name_or_path bert-base-uncased --max_seq_length 512 \
  [--learning_rate LEARNING_RATE] [--num_train_epochs NUM_TRAIN_EPOCHS] \ 
  [--train_tsv TRAIN_TSV] \ 
@@ -39,7 +39,7 @@ Arguments to note:
 
 ### Inference
 ```
-python script/run_inference.py --task_name BERTSel --do_lower_case --batch_size 8 \ 
+python bertsel/run_inference.py --task_name BERTSel --do_lower_case --batch_size 8 \ 
  --max_seq_length 512 --model_type bert \ 
  [--model_name_or_path MODEL_DIR] \
  [--test_tsv TEST_TSV] [--answer_pool ANSWER_POOL] \ 
@@ -59,7 +59,7 @@ Arguments to note:
 
 ### Generate Training Examples
 ```
-python script/generate_training.py [--input_tsv INPUT_TSV] [--num_negatives NUM_NEGATIVES] [--output_tsv OUTPUT_TSV]
+python bertsel/generate_training.py [--input_tsv INPUT_TSV] [--num_negatives NUM_NEGATIVES] [--output_tsv OUTPUT_TSV]
  
 Arguments:
   INPUT_TSV - Path to the training data in .tsv format. Each line should have three items: (question, answer, label) separated by tab.
