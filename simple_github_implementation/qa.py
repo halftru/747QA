@@ -21,10 +21,8 @@ answers = None
 
 def main(mode='test'):
     # get the train and predict model model
-    vocabulary = Vocabulary("./data/vocab_all.txt")
-    embedding_file = "data/pretrained_word2vec_100_dim.embeddings"
+    embedding_file = "data/pretrained_word2vec_100_dim.embeddings"  # 'data/pretrained_word2vec_100_dim.embeddings'
     qa_model = QAModel()
-    print(len(vocabulary))
     train_model, predict_model = qa_model.get_lstm_cnn_model(embedding_file)
     epo = 1
     if mode == 'train':
