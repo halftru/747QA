@@ -17,7 +17,6 @@
 import csv
 import logging
 
-from scipy.stats import pearsonr, spearmanr
 from sklearn.metrics import f1_score
 
 logger = logging.getLogger(__name__)
@@ -243,16 +242,6 @@ def mean_average_precision(preds, labels):
         total_average_precision += total_precision / len(ranks)
 
     return total_average_precision / len(preds)
-
-
-def pearson_and_spearman(preds, labels):
-    pearson_corr = pearsonr(preds, labels)[0]
-    spearman_corr = spearmanr(preds, labels)[0]
-    return {
-        "pearson": pearson_corr,
-        "spearmanr": spearman_corr,
-        "corr": (pearson_corr + spearman_corr) / 2,
-    }
 
 
 processors = {
