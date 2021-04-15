@@ -19,65 +19,38 @@ from scipy.stats import rankdata
 physical_devices = tf.config.list_physical_devices('GPU')
 tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
-sentence_length = 200
 def glove(tok):
-    embeddings_index = {}
+    try:
+        return np.load('./data/trec_emb')
+    except:
+        embeddings_index = {}
 
-    # ignore stuff that causes errors and specify encoding to avoid some errors
-    f = open('./data/glove.6B.300d.txt', errors='ignore', encoding='utf-8')
-    for line in f:
-        values = line.split()
-        word = ''.join(values[:-300])
-        co = np.asarray(values[-300:], dtype='float32')
-        embeddings_index[word] = co
-    f.close()
+        # ignore stuff that causes errors and specify encoding to avoid some errors
+        f = open('./data/glove.6B.300d.txt', errors='ignore', encoding='utf-8')
+        for line in f:
+            values = line.split()
+            word = ''.join(values[:-300])
+            co = np.asarray(values[-300:], dtype='float32')
+            embeddings_index[word] = co
+        f.close()
 
-    word_index = tok.word_index
-    embedding_matrix_1 = np.zeros(shape=(len(tok.word_index) + 1, 300), dtype='float32')
+        word_index = tok.word_index
+        embedding_matrix_1 = np.zeros(shape=(len(tok.word_index) + 1, 300), dtype='float32')
 
-    for word, i in word_index.items():
-        embedding_vector = embeddings_index.get(word)
-        if embedding_vector is not None:
-            embedding_matrix_1[i] = embedding_vector
-    print("done with glove")
-    print(embedding_matrix_1.shape)
-    np.save(open('data/trec_emb', 'wb'), embedding_matrix_1)
+        for word, i in word_index.items():
+            embedding_vector = embeddings_index.get(word)
+            if embedding_vector is not None:
+                embedding_matrix_1[i] = embedding_vector
 
+        np.save(open('data/trec_emb', 'wb'), embedding_matrix_1)
+        return np.load('./data/trec_emb')
 
-# def tokenize_and_pad(data, length, tokenizer):
-#     print(data)
-#     print(len(data))
-#     data_tokenized = tokenizer.texts_to_sequences(data)
-#     print(len(data_tokenized))
-#     # print(data_tokenized)
-#     padded = pad_sequences(data_tokenized, maxlen=length, padding='post', truncating='post', value=0)
-#     print(len(padded))
-#     # print(padded)
-#     exit()
-#     return padded
 
 def pad(data, length):
     return pad_sequences(data, maxlen=length, padding='post', truncating='post', value=0)
 
-testf = pd.read_csv("./data/trec/test.csv")
-trainf = pd.read_csv("./data/trec/train-all.csv")
-valf = pd.read_csv("./data/trec/dev.csv")
-# train_label = trainf['label']
-train2 = np.hstack(trainf['qtext'] + trainf['atext'])
-# val_label = valf['label']
-# valf2 = np.hstack(valf['qtext'] + valf['atext'])
-# test_label = testf['label']
-# test2 = np.hstack(testf['qtext'] + testf['atext'])
 
-tokenizer = Tokenizer()
-tokenizer.fit_on_texts(train2)
-
-# glove(tokenizer)
-emb_glove = np.load('./data/trec_emb')
-
-# print(emb_glove)
-
-def preprocess_train_file(filename):
+def preprocess_train_file(filename, tokenizer, sentence_length=200):
 
     input_file = open(filename, 'r', encoding='utf-8')
 
@@ -118,9 +91,9 @@ def preprocess_train_file(filename):
     bad_tokenized = tokenizer.texts_to_sequences(bad_answers)
     bad_answers = pad(bad_tokenized, sentence_length)
     return questions, good_answers, bad_answers
-    
 
-def preprocess_test_file(filename):
+
+def preprocess_test_file(filename, tokenizer, sentence_length=200):
     input_file = open(filename, 'r', encoding='utf-8')
     reader = csv.reader(input_file, delimiter=',')
 
@@ -150,88 +123,84 @@ def preprocess_test_file(filename):
         
     return nested
 
-questions, good_answers, bad_answers = preprocess_train_file('./data/trec/train-all.csv')
-validation_dict = preprocess_test_file('./data/trec/dev.csv')
 
-print(len(validation_dict.keys()))
+def train(tokenizer, sentence_length, epochs=1, batch_size=64, save=True):
 
+    questions, good_answers, bad_answers = preprocess_train_file('./data/trec/train-all.csv', tokenizer, sentence_length)
+    validation_dict = preprocess_test_file('./data/trec/dev.csv', tokenizer, sentence_length)
 
-qa_model = QAModel()
-train_model, predict_model = qa_model.get_lstm_cnn_model(emb_glove)
-epo = 1
+    callbacks = [EarlyStopping(monitor='val_loss', patience=20),
+                ModelCheckpoint(filepath='best_model.h5', monitor='val_loss', save_best_only=True)]
 
+    # # train the model
+    Y = np.zeros(shape=(len(questions),))
+    train_model.fit([questions, good_answers, bad_answers], Y, epochs=epochs, batch_size=batch_size, validation_split=0.1,
+                    verbose=1, callbacks=callbacks)
 
-callbacks = [EarlyStopping(monitor='val_loss', patience=20),
-             ModelCheckpoint(filepath='best_model.h5', monitor='val_loss', save_best_only=True)]
+                    #validation_data=[val_questions, val_good_answers, val_bad_answers]
+                    #validation_data=[validation_dict]?
 
-# # train the model
-# Y = np.zeros(shape=(len(questions),))
-# train_model.fit([questions, good_answers, bad_answers], Y, epochs=epo, batch_size=64, validation_split=0.1,
-#                 verbose=1, callbacks=callbacks)
-
-#                 #validation_data=[val_questions, val_good_answers, val_bad_answers]
-
-# # save the trained model
-# # train_model.save_weights('model/train_weights_epoch_' + str(epo) + '.h5', overwrite=True)
-# predict_model.save_weights('model/predict_weights_epoch_' + str(epo) + '.h5', overwrite=True)
+    # save the trained model
+    if save:
+        predict_model.save_weights('model/trec/weights_epoch_' + str(epochs) + '.h5', overwrite=True)
 
 
+def test(tokenizer, sentence_length, epochs=1):
+    # load the evaluation data
+    test_data_dict_list = preprocess_test_file('./data/trec/test.csv', tokenizer, sentence_length)
+
+    # load weights from trained model
+    model_filenames = ['model/trec/weights_epoch_' + str(epochs) + '.h5']
+
+    for model_name in model_filenames:
+        predict_model.load_weights(model_name)
+
+        c = 0
+        c1 = 0
+        for i, (question, answers_dict) in enumerate(test_data_dict_list.items()):
+            n_good = len(answers_dict['good'])
+            if n_good == 0:
+                print('No good answers for question: {question}')
+                continue
+            
+            answers = np.concatenate((answers_dict['good'], answers_dict['bad']))    # saves to good
+            
+            # get the similarity score
+            sims = predict_model.predict([answers_dict['question'], answers])
+
+            max_r = np.argmax(sims)
+            max_n = np.argmax(sims[:n_good])
+            r = rankdata(sims, method='max')
+            c += 1 if max_r == max_n else 0
+            c1 += 1 / float(r[max_r] - r[max_n] + 1)
+
+        print(f'Results for: model: {model_name}')
+        print("top1", c / float(len(test_data_dict_list)))
+        print("MRR", c1 / float(len(test_data_dict_list)))
+        print(f'# Questions: {len(test_data_dict_list)}')
 
 
-# load the evaluation data
-test_data_dict_list = preprocess_test_file('./data/trec/test.csv')
+if __name__ == "__main__":
+    sentence_length = 200
+    epochs = 1
+    batch_size=64
 
-# test_questions, test_good_answers, test_bad_answers = preprocess_train_file('./data/trec/test.csv')
-# test_data_dict_list = make_dict_list(test_questions, test_good_answers, test_bad_answers)
-# data = zip(test_questions, test_good_answers, test_bad_answers)
+    # Read in data files
+    testf = pd.read_csv("./data/trec/test.csv")
+    trainf = pd.read_csv("./data/trec/train-all.csv")
+    valf = pd.read_csv("./data/trec/dev.csv")
+    
+    train_all_text = np.hstack(trainf['qtext'] + trainf['atext'])
 
+    tokenizer = Tokenizer()
+    tokenizer.fit_on_texts(train_all_text)
 
-# load weights from trained model
-model_filenames = ['model/predict_weights_epoch_' + str(epo) + '.h5']
+    # Load Embeddings
+    emb_glove = glove(tokenizer)
 
-for model_name in model_filenames:
-    predict_model.load_weights(model_name)
+    qa_model = QAModel()
+    train_model, predict_model = qa_model.get_lstm_cnn_model(emb_glove)
 
-    c = 0
-    c1 = 0
-    for i, (question, answers_dict) in enumerate(test_data_dict_list.items()):
-        print(i, len(test_data_dict_list))
-        print(f'question: {question}')
-        # print(f'answers_dict["good"]: {answers_dict["good"]}')
-        # print(f'answers_dict["bad"]: {answers_dict["bad"]}')
+    train(tokenizer, sentence_length, epochs=epochs, batch_size=batch_size, save=True)
+    test(tokenizer, sentence_length, epochs=epochs)
 
-        # # pad the data and get it in desired format
-        # answers, question = process_data(question, good_answer, bad_answer)
-
-        # get the similarity score
-        n_good = len(answers_dict['good'])
-        # print(f'n_good" {n_good}')
-        n_bad = len(answers_dict['bad'])
-        # print(f'n_bad" {n_bad}')
-        print(len(answers_dict['question']))
-
-        print(len(answers_dict['good']))
-        print(len(answers_dict['good'][0]))
-        print(len(answers_dict['good'][1]))
-        print(len(answers_dict['bad']))
-        print(len(answers_dict['bad'][0]))
-        print(len(answers_dict['bad'][1]))
-        print(len(answers_dict['question']))
-        print(len(answers_dict['question'][0]))
-        print(len(answers_dict['question'][1]))
-        
-        answers = np.concatenate((answers_dict['good'], answers_dict['bad']))    # saves to good
-        # print(len(answers_dict['good']))
-        
-        sims = predict_model.predict([answers_dict['question'], answers])
-        # print(f'n_good" {n_good}')
-
-        max_r = np.argmax(sims)
-        max_n = np.argmax(sims[:n_good])
-        r = rankdata(sims, method='max')
-        c += 1 if max_r == max_n else 0
-        c1 += 1 / float(r[max_r] - r[max_n] + 1)
-
-    print(f'Results for: model: {model_name}')
-    print("top1", c / float(len(test_data_dict_list)))
-    print("MRR", c1 / float(len(test_data_dict_list)))

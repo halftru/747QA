@@ -67,8 +67,7 @@ def main(mode='test'):
                         verbose=1, callbacks=callbacks)
 
         # save the trained model
-        # train_model.save_weights('model/train_weights_epoch_' + str(epo) + '.h5', overwrite=True)
-        predict_model.save_weights('model/predict_weights_epoch_' + str(epo) + '.h5', overwrite=True)
+        predict_model.save_weights('model/insurance/weights_epoch_' + str(epo) + '.h5', overwrite=True)
 
     elif mode == 'predict':
         # load the evaluation data
@@ -76,7 +75,7 @@ def main(mode='test'):
         random.shuffle(data)
 
         # load weights from trained model
-        model_filenames = ['model/predict_weights_epoch_' + str(epo) + '.h5']
+        model_filenames = ['model/insurance/weights_epoch_' + str(epo) + '.h5']
 
         for model_name in model_filenames:
             predict_model.load_weights(model_name)
