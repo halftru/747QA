@@ -140,7 +140,7 @@ predict_model.save_weights('model/predict_weights_epoch_' + str(epo) + '.h5', ov
 exit()
 # load the evaluation data
 data = []
-random.shuffle(daremove ta)
+random.shuffle(data)
 
 # load weights from trained model
 model_filenames = ['model/predict_weights_epoch_' + str(epo) + '.h5']
