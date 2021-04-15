@@ -71,7 +71,7 @@ x_train = pad_sequences(x_train)
 x_test = pad_sequences(x_test)
 tokenizer.fit_on_texts(train2)
 
-emb_glove = glove(tokenizer)
+glove(tokenizer)
 emb_glove = np.load('./data/trec_emb')
 
 print(emb_glove)
@@ -140,7 +140,7 @@ predict_model.save_weights('model/predict_weights_epoch_' + str(epo) + '.h5', ov
 exit()
 # load the evaluation data
 data = []
-random.shuffle(data)
+random.shuffle(daremove ta)
 
 # load weights from trained model
 model_filenames = ['model/predict_weights_epoch_' + str(epo) + '.h5']

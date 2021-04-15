@@ -28,7 +28,7 @@ def process_data(d):
     indices = d['good'] + d['bad']
     answers = pad([answersy[i] for i in indices], sentence_length)
     question = pad([d['question']] * len(indices), sentence_length)
-    return indices, answers, question
+    return answers, question
 
 
 def get_training_data():
@@ -88,7 +88,7 @@ def main(mode='test'):
                     print(i, len(data))
 
                 # pad the data and get it in desired format
-                indices, answers, question = process_data(d)
+                answers, question = process_data(d)
 
                 # get the similarity score
                 sims = predict_model.predict([question, answers])
