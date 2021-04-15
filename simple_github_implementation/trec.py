@@ -35,7 +35,6 @@ def glove(tok):
     print("done with glove")
     print(embedding_matrix_1.shape)
     np.save(open('data/trec_emb', 'wb'), embedding_matrix_1)
-    exit()
 
 
 testf = pd.read_csv("./data/trec/test.csv")
@@ -61,10 +60,8 @@ print(emb_glove)
 
 
 input_file = open('./data/trec/train.csv', 'r', encoding='utf-8')
-output_file = open('./data/trec/train1.csv', 'w', encoding='utf-8')
 
 reader = csv.reader(input_file, delimiter=',')
-writer = csv.writer(output_file, delimiter=',')
 
 positives = []
 negatives = defaultdict(list)
@@ -77,17 +74,22 @@ for question, label, answer in reader:
     answers.add(answer)
 print(positives)
 answers = list(answers)
+
+questions = []
+good_answers = []
+bad_answers = []
 for question, positive in positives:
     counter = 0
-    while counter < len(positives):
-        if len(negatives[question]) > 0:
-            negative = negatives[question].pop()
-        else:
+    if len(negatives[question]) > 0:
+        negative = negatives[question].pop()
+    else:
+        negative = random.choice(answers)
+        while negative == positive:
             negative = random.choice(answers)
 
-        if negative != positive:
-            writer.writerow([question, positive, negative])
-            counter += 1
+    questions.append(question)
+    good_answers.append(positive)
+    bad_answers.append(negative)
 
+print(questions)
 input_file.close()
-output_file.close()
