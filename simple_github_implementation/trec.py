@@ -127,18 +127,16 @@ def preprocess_test_file(filename, tokenizer, sentence_length=200):
 def train(tokenizer, sentence_length, epochs=1, batch_size=64, save=True):
 
     questions, good_answers, bad_answers = preprocess_train_file('./data/trec/train-all.csv', tokenizer, sentence_length)
-    validation_dict = preprocess_test_file('./data/trec/dev.csv', tokenizer, sentence_length)
+    val_questions, val_good_answers, val_bad_answers = preprocess_train_file('./data/trec/dev.csv', tokenizer, sentence_length)
 
     callbacks = [EarlyStopping(monitor='val_loss', patience=20),
                 ModelCheckpoint(filepath='best_model.h5', monitor='val_loss', save_best_only=True)]
 
     # # train the model
     Y = np.zeros(shape=(len(questions),))
-    train_model.fit([questions, good_answers, bad_answers], Y, epochs=epochs, batch_size=batch_size, validation_split=0.1,
+    train_model.fit([questions, good_answers, bad_answers], Y, epochs=epochs, batch_size=batch_size, 
+                    validation_data=[val_questions, val_good_answers, val_bad_answers],
                     verbose=1, callbacks=callbacks)
-
-                    #validation_data=[val_questions, val_good_answers, val_bad_answers]
-                    #validation_data=[validation_dict]?
 
     # save the trained model
     if save:
