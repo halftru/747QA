@@ -124,25 +124,30 @@ def preprocess_test_file(filename):
     input_file = open(filename, 'r', encoding='utf-8')
     reader = csv.reader(input_file, delimiter=',')
 
-    nested = defaultdict(lambda: defaultdict(list)) # {'(question)':{'good': [answers], 'bad': [answers]}}
+    nested = defaultdict(lambda: defaultdict(list)) # {'(question)':{'good': [answers], 'bad': [answers], 'question': [question repeated]}}
     # questions = {'': defaultdict(list)}
     # answers = defaultdict(list) # {'': []}
     for i, (question, label, answer) in enumerate(reader):
         if i!=0:
-            question_tokenized = tokenizer.texts_to_sequences(question)
-            question_cleaned = pad(question_tokenized, sentence_length)
-            # print(f'question_cleaned: {len(question_cleaned)}')
-            # print(f'sentence_length: {sentence_length}')
-
             good_bad = 'good' if label == "1" else 'bad'
 
-            answer_tokenized = tokenizer.texts_to_sequences(answer)
-            answer_cleaned = pad(answer_tokenized, sentence_length)
-            # print(f'answer_cleaned: {len(answer_cleaned)}')
-            nested[question][good_bad].append(answer_cleaned)
-            nested[question]['question'] = question_cleaned
+            nested[question][good_bad].append(answer)
+            nested[question]['question'].append(question)
 
     input_file.close()
+
+    for i, (question, answers_dict) in enumerate(nested.items()):
+
+        answer_good_tokenized = tokenizer.texts_to_sequences(answers_dict['good'])
+        answer_good_cleaned = pad(answer_good_tokenized, sentence_length)
+        answers_dict['good'] = answer_good_cleaned
+        answer_bad_tokenized = tokenizer.texts_to_sequences(answers_dict['bad'])
+        answer_bad_cleaned = pad(answer_bad_tokenized, sentence_length)
+        answers_dict['bad'] = answer_bad_cleaned
+        answer_question_tokenized = tokenizer.texts_to_sequences(answers_dict['question'])
+        answer_question_cleaned = pad(answer_question_tokenized, sentence_length)
+        answers_dict['question'] = answer_question_cleaned
+        
     return nested
 
 questions, good_answers, bad_answers = preprocess_train_file('./data/trec/train-all.csv')
@@ -203,12 +208,22 @@ for model_name in model_filenames:
         # print(f'n_good" {n_good}')
         n_bad = len(answers_dict['bad'])
         # print(f'n_bad" {n_bad}')
-        data_question = answers_dict['question']
-        # print(len(answers_dict['good']))
-        answers_dict['good'].extend(answers_dict['bad'])    # saves to good
+        print(len(answers_dict['question']))
+
+        print(len(answers_dict['good']))
+        print(len(answers_dict['good'][0]))
+        print(len(answers_dict['good'][1]))
+        print(len(answers_dict['bad']))
+        print(len(answers_dict['bad'][0]))
+        print(len(answers_dict['bad'][1]))
+        print(len(answers_dict['question']))
+        print(len(answers_dict['question'][0]))
+        print(len(answers_dict['question'][1]))
+        
+        answers = np.concatenate((answers_dict['good'], answers_dict['bad']))    # saves to good
         # print(len(answers_dict['good']))
         
-        sims = predict_model.predict([data_question, answers_dict['good']])
+        sims = predict_model.predict([answers_dict['question'], answers])
         # print(f'n_good" {n_good}')
 
         max_r = np.argmax(sims)
