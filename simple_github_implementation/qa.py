@@ -19,7 +19,6 @@ answers = None
 sentence_length = 200
 answersy = pickle.load(open("./data/answers.pkl", 'rb'))
 training_set = pickle.load(open("./data/train.pkl", 'rb'))
-print(training_set)
 
 def pad(data, length):
     return pad_sequences(data, maxlen=length, padding='post', truncating='post', value=0)
