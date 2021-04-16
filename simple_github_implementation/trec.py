@@ -5,8 +5,6 @@ import numpy as np
 import pandas as pd
 import time
 import random
-
-from gensim.models import KeyedVectors
 from keras.preprocessing.sequence import pad_sequences
 from keras import layers, Sequential
 # from gensim.models import KeyedVectors
@@ -17,38 +15,19 @@ from tensorflow.python.keras.callbacks import EarlyStopping, ModelCheckpoint
 
 from model import QAModel
 from scipy.stats import rankdata
+import time
 
 physical_devices = tf.config.list_physical_devices('GPU')
 tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
-
-def word2(tok):
-    embeddings_index = KeyedVectors.load_word2vec_format('./data/GoogleNews-vectors-negative300.bin.gz', binary=True)
-    word_index = tok.word_index
-    embedding_matrix_2 = np.zeros(shape=(len(word_index)+1, 300), dtype='float32')
-    for i, word in word_index.items():
-        if word in embeddings_index:
-            embedding_vector = embeddings_index.get_vector(word)
-            embedding_matrix_2[i] = embedding_vector
-    return embedding_matrix_2
-
-
-def fast(tok):
-    embeddings_index = KeyedVectors.load_word2vec_format('./data/wiki-news-300d-1M.vec', binary=True)
-    word_index = tok.word_index
-    embedding_matrix_2 = np.zeros(shape=(len(word_index)+1, 300), dtype='float32')
-    for i, word in word_index.items():
-        if word in embeddings_index:
-            embedding_vector = embeddings_index.get_vector(word)
-            embedding_matrix_2[i] = embedding_vector
-    return embedding_matrix_2
-
-
-def embedding(tok, emb_file):
+def glove(tok):
+    try:
+        return np.load('./data/trec_emb')
+    except:
         embeddings_index = {}
 
         # ignore stuff that causes errors and specify encoding to avoid some errors
-        f = open(emb_file, errors='ignore', encoding='utf-8')
+        f = open('./data/glove.6B.300d.txt', errors='ignore', encoding='utf-8')
         for line in f:
             values = line.split()
             word = ''.join(values[:-300])
@@ -64,7 +43,8 @@ def embedding(tok, emb_file):
             if embedding_vector is not None:
                 embedding_matrix_1[i] = embedding_vector
 
-        return embedding_matrix_1
+        np.save(open('data/trec_emb', 'wb'), embedding_matrix_1)
+        return np.load('./data/trec_emb')
 
 
 def pad(data, length):
@@ -72,6 +52,7 @@ def pad(data, length):
 
 
 def preprocess_train_file(filename, tokenizer, sentence_length=200):
+
     input_file = open(filename, 'r', encoding='utf-8')
 
     reader = csv.reader(input_file, delimiter=',')
@@ -80,7 +61,7 @@ def preprocess_train_file(filename, tokenizer, sentence_length=200):
     negatives = defaultdict(list)
     answers = set()
     for i, (question, label, answer) in enumerate(reader):
-        if i != 0:
+        if i!=0:
             if label == "1":
                 positives.append((question, answer))
             else:
@@ -117,12 +98,11 @@ def preprocess_test_file(filename, tokenizer, sentence_length=200):
     input_file = open(filename, 'r', encoding='utf-8')
     reader = csv.reader(input_file, delimiter=',')
 
-    nested = defaultdict(lambda: defaultdict(
-        list))  # {'(question)':{'good': [answers], 'bad': [answers], 'question': [question repeated]}}
+    nested = defaultdict(lambda: defaultdict(list)) # {'(question)':{'good': [answers], 'bad': [answers], 'question': [question repeated]}}
     # questions = {'': defaultdict(list)}
     # answers = defaultdict(list) # {'': []}
     for i, (question, label, answer) in enumerate(reader):
-        if i != 0:
+        if i!=0:
             good_bad = 'good' if label == "1" else 'bad'
 
             nested[question][good_bad].append(answer)
@@ -131,6 +111,7 @@ def preprocess_test_file(filename, tokenizer, sentence_length=200):
     input_file.close()
 
     for i, (question, answers_dict) in enumerate(nested.items()):
+
         answer_good_tokenized = tokenizer.texts_to_sequences(answers_dict['good'])
         answer_good_cleaned = pad(answer_good_tokenized, sentence_length)
         answers_dict['good'] = answer_good_cleaned
@@ -140,26 +121,23 @@ def preprocess_test_file(filename, tokenizer, sentence_length=200):
         answer_question_tokenized = tokenizer.texts_to_sequences(answers_dict['question'])
         answer_question_cleaned = pad(answer_question_tokenized, sentence_length)
         answers_dict['question'] = answer_question_cleaned
-
+        
     return nested
 
 
 def train(tokenizer, sentence_length, epochs=1, batch_size=64, save=True):
-    questions, good_answers, bad_answers = preprocess_train_file('./data/trec/train-all.csv', tokenizer,
-                                                                 sentence_length)
-    validation_dict = preprocess_test_file('./data/trec/dev.csv', tokenizer, sentence_length)
+
+    questions, good_answers, bad_answers = preprocess_train_file('./data/trec/train-all.csv', tokenizer, sentence_length)
+    val_questions, val_good_answers, val_bad_answers = preprocess_train_file('./data/trec/dev.csv', tokenizer, sentence_length)
 
     callbacks = [EarlyStopping(monitor='val_loss', patience=20),
-                 ModelCheckpoint(filepath='best_model.h5', monitor='val_loss', save_best_only=True)]
+                ModelCheckpoint(filepath='best_model.h5', monitor='val_loss', save_best_only=True)]
 
     # # train the model
     Y = np.zeros(shape=(len(questions),))
-    train_model.fit([questions, good_answers, bad_answers], Y, epochs=epochs, batch_size=batch_size,
-                    validation_split=0.1,
+    train_model.fit([questions, good_answers, bad_answers], Y, epochs=epochs, batch_size=batch_size, 
+                    validation_data=[val_questions, val_good_answers, val_bad_answers],
                     verbose=1, callbacks=callbacks)
-
-    # validation_data=[val_questions, val_good_answers, val_bad_answers]
-    # validation_data=[validation_dict]?
 
     # save the trained model
     if save:
@@ -183,9 +161,9 @@ def test(tokenizer, sentence_length, epochs=1):
             if n_good == 0:
                 print('No good answers for question: {question}')
                 continue
-
-            answers = np.concatenate((answers_dict['good'], answers_dict['bad']))  # saves to good
-
+            
+            answers = np.concatenate((answers_dict['good'], answers_dict['bad']))    # saves to good
+            
             # get the similarity score
             sims = predict_model.predict([answers_dict['question'], answers])
 
@@ -204,26 +182,24 @@ def test(tokenizer, sentence_length, epochs=1):
 if __name__ == "__main__":
     sentence_length = 200
     epochs = 1
-    batch_size = 64
+    batch_size=64
 
     # Read in data files
     testf = pd.read_csv("./data/trec/test.csv")
     trainf = pd.read_csv("./data/trec/train-all.csv")
     valf = pd.read_csv("./data/trec/dev.csv")
-
+    
     train_all_text = np.hstack(trainf['qtext'] + trainf['atext'])
 
     tokenizer = Tokenizer()
     tokenizer.fit_on_texts(train_all_text)
 
     # Load Embeddings
-    emb_glove = embedding(tokenizer, './data/glove.6B.300d.txt')
-    emb_word2 = word2(tokenizer)
-    emb_fast = fast(tokenizer)
-    exit()
+    emb_glove = glove(tokenizer)
 
     qa_model = QAModel()
     train_model, predict_model = qa_model.get_lstm_cnn_model(emb_glove)
 
     train(tokenizer, sentence_length, epochs=epochs, batch_size=batch_size, save=True)
     test(tokenizer, sentence_length, epochs=epochs)
+
