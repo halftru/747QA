@@ -23,11 +23,15 @@ physical_devices = tf.config.list_physical_devices('GPU')
 tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
 
+def combine(embedding_matrix_1, embedding_matrix_2):
+    embedding_matrix = np.concatenate((embedding_matrix_1, embedding_matrix_2), axis=1)
+    return embedding_matrix
+
 def word2(tok):
     embeddings_index = KeyedVectors.load_word2vec_format('./data/GoogleNews-vectors-negative300.bin.gz', binary=True)
     word_index = tok.word_index
     embedding_matrix_2 = np.zeros(shape=(len(word_index)+1, 300), dtype='float32')
-    for i, word in word_index.items():
+    for word, i in word_index.items():
         if word in embeddings_index:
             embedding_vector = embeddings_index.get_vector(word)
             embedding_matrix_2[i] = embedding_vector
@@ -38,7 +42,7 @@ def fast(tok):
     embeddings_index = KeyedVectors.load_word2vec_format('./data/wiki-news-300d-1M.vec', binary=True)
     word_index = tok.word_index
     embedding_matrix_2 = np.zeros(shape=(len(word_index)+1, 300), dtype='float32')
-    for i, word in word_index.items():
+    for word, i in word_index.items():
         if word in embeddings_index:
             embedding_vector = embeddings_index.get_vector(word)
             embedding_matrix_2[i] = embedding_vector
@@ -216,10 +220,14 @@ if __name__ == "__main__":
     tokenizer.fit_on_texts(train_all_text)
 
     # Load Embeddings
-    emb_glove = embedding(tokenizer, './data/glove.6B.300d.txt')
     emb_word2 = word2(tokenizer)
+    emb_glove = embedding(tokenizer, './data/glove.6B.300d.txt')
     emb_fast = fast(tokenizer)
-    exit()
+    fast_glove = combine(emb_fast, emb_glove)
+    fast_word = combine(emb_fast, emb_word2)
+    glove_word = combine(emb_fast, emb_glove)
+    fast_word_glove = combine(emb_fast, emb_glove)
+    fast_word_glove = combine(fast_word_glove, emb_word2)
 
     qa_model = QAModel()
     train_model, predict_model = qa_model.get_lstm_cnn_model(emb_glove)
