@@ -8,6 +8,7 @@ import tensorflow as tf
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 from keras.preprocessing.sequence import pad_sequences
 
+import time
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 # let my gpu have memory
@@ -50,9 +51,12 @@ def main(mode='test'):
     # get the train and predict model model
     embedding = "fast_100_dim.embeddings"
     embedding = np.load(embedding)
+    embedding2 = np.load("./data/word2vec_100_dim.embeddings")
+    embedding_matrix = np.concatenate((embedding, embedding2), axis=1)
     qa_model = QAModel()
-    train_model, predict_model = qa_model.get_lstm_cnn_model(embedding)
+    train_model, predict_model = qa_model.get_lstm_cnn_model(embedding_matrix)
     epo = 1
+    total_time = 0
     if mode == 'train':
 
         # load training data
@@ -62,12 +66,13 @@ def main(mode='test'):
                      ModelCheckpoint(filepath='best_model.h5', monitor='val_loss', save_best_only=True)]
 
         # train the model
+        start_time = time.time()
         Y = np.zeros(shape=(questions.shape[0],))
         train_model.fit([questions, good_answers, bad_answers], Y, epochs=epo, batch_size=128, validation_split=0.1,
                         verbose=1, callbacks=callbacks)
+        total_time = time.time() - start_time
 
         # save the trained model
-        # train_model.save_weights('model/train_weights_epoch_' + str(epo) + '.h5', overwrite=True)
         predict_model.save_weights('model/predict_weights_epoch_' + str(epo) + '.h5', overwrite=True)
 
     elif mode == 'predict':
@@ -103,6 +108,7 @@ def main(mode='test'):
             print(f'Results for: model: {model_name}')
             print("top1", c / float(len(data)))
             print("MRR", c1 / float(len(data)))
+            print("run_time:", total_time)
 
 
 if __name__ == "__main__":
