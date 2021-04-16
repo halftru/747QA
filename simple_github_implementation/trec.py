@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 import time
 import random
+
+from gensim.models import KeyedVectors
 from keras.preprocessing.sequence import pad_sequences
 from keras import layers, Sequential
 # from gensim.models import KeyedVectors
@@ -20,31 +22,50 @@ import time
 physical_devices = tf.config.list_physical_devices('GPU')
 tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
-def glove(tok):
-    try:
-        return np.load('./data/trec_emb')
-    except:
-        embeddings_index = {}
 
-        # ignore stuff that causes errors and specify encoding to avoid some errors
-        f = open('./data/glove.6B.300d.txt', errors='ignore', encoding='utf-8')
-        for line in f:
-            values = line.split()
-            word = ''.join(values[:-300])
-            co = np.asarray(values[-300:], dtype='float32')
-            embeddings_index[word] = co
-        f.close()
+def word2(tok):
+    embeddings_index = KeyedVectors.load_word2vec_format('./data/GoogleNews-vectors-negative300.bin.gz', binary=True)
+    word_index = tok.word_index
+    embedding_matrix_2 = np.zeros(shape=(len(word_index)+1, 300), dtype='float32')
+    for i, word in word_index.items():
+        if word in embeddings_index:
+            embedding_vector = embeddings_index.get_vector(word)
+            embedding_matrix_2[i] = embedding_vector
+    return embedding_matrix_2
 
-        word_index = tok.word_index
-        embedding_matrix_1 = np.zeros(shape=(len(tok.word_index) + 1, 300), dtype='float32')
 
-        for word, i in word_index.items():
-            embedding_vector = embeddings_index.get(word)
-            if embedding_vector is not None:
-                embedding_matrix_1[i] = embedding_vector
+def fast(tok):
+    embeddings_index = KeyedVectors.load_word2vec_format('./data/wiki-news-300d-1M.vec', binary=True)
+    word_index = tok.word_index
+    embedding_matrix_2 = np.zeros(shape=(len(word_index)+1, 300), dtype='float32')
+    for i, word in word_index.items():
+        if word in embeddings_index:
+            embedding_vector = embeddings_index.get_vector(word)
+            embedding_matrix_2[i] = embedding_vector
+    return embedding_matrix_2
 
-        np.save(open('data/trec_emb', 'wb'), embedding_matrix_1)
-        return np.load('./data/trec_emb')
+
+def embedding(tok, emb_file):
+    embeddings_index = {}
+
+    # ignore stuff that causes errors and specify encoding to avoid some errors
+    f = open(emb_file, errors='ignore', encoding='utf-8')
+    for line in f:
+        values = line.split()
+        word = ''.join(values[:-300])
+        co = np.asarray(values[-300:], dtype='float32')
+        embeddings_index[word] = co
+    f.close()
+
+    word_index = tok.word_index
+    embedding_matrix_1 = np.zeros(shape=(len(tok.word_index) + 1, 300), dtype='float32')
+
+    for word, i in word_index.items():
+        embedding_vector = embeddings_index.get(word)
+        if embedding_vector is not None:
+            embedding_matrix_1[i] = embedding_vector
+
+    return embedding_matrix_1
 
 
 def pad(data, length):
@@ -195,7 +216,10 @@ if __name__ == "__main__":
     tokenizer.fit_on_texts(train_all_text)
 
     # Load Embeddings
-    emb_glove = glove(tokenizer)
+    emb_glove = embedding(tokenizer, './data/glove.6B.300d.txt')
+    emb_word2 = word2(tokenizer)
+    emb_fast = fast(tokenizer)
+    exit()
 
     qa_model = QAModel()
     train_model, predict_model = qa_model.get_lstm_cnn_model(emb_glove)
